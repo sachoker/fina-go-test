@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"math/rand"
 	"testing"
 )
@@ -27,8 +28,18 @@ func TestGenerateRandomElements(t *testing.T) {
 		}
 	})
 
+	t.Run("values vary", func(t *testing.T) {
+		data := generateRandomElements(100)
+		for _, v := range data {
+			if v != data[0] {
+				return
+			}
+		}
+		t.Fatal("all 100 values are equal, data does not look random")
+	})
+
 	t.Run("panics on non-positive size", func(t *testing.T) {
-		for _, size := range []int{0, -1, -100} {
+		for _, size := range []int{0, -1, -100, math.MinInt} {
 			func() {
 				defer func() {
 					if recover() == nil {
@@ -57,7 +68,11 @@ func TestMaximum(t *testing.T) {
 		{"duplicates", []int{5, 5, 5}, 5},
 		{"all negative", []int{-9, -2, -5}, -2},
 		{"mixed", []int{-9, 4, -2, 0}, 4},
-		{"maxint", []int{0, 1<<62 - 1}, 1<<62 - 1},
+		{"all zeros", []int{0, 0, 0}, 0},
+		{"single min-int", []int{math.MinInt}, math.MinInt},
+		{"all min-int", []int{math.MinInt, math.MinInt, math.MinInt}, math.MinInt},
+		{"min-int then max-int", []int{math.MinInt, math.MaxInt}, math.MaxInt},
+		{"max-int then min-int", []int{math.MaxInt, math.MinInt}, math.MaxInt},
 	}
 
 	for _, tt := range tests {
@@ -95,6 +110,8 @@ func TestMaxChunks(t *testing.T) {
 	}{
 		{"nil", nil, 0},
 		{"empty", []int{}, 0},
+		{"single negative", []int{-5}, -5},
+		{"short all negative", []int{-7, -3, -9}, -3},
 		{"fewer elements than chunks", []int{3, 8, 1}, 8},
 		{"exactly one chunk", []int{3, 8, 1, 4, 2, 9, 7, 5}, 9},
 		{"non-divisible length", []int{3, 8, 1, 4, 2, 9, 7, 5, 11}, 11},
@@ -119,6 +136,23 @@ func TestMaxChunks(t *testing.T) {
 			}
 			if got, want := maxChunks(data), maximum(data); got != want {
 				t.Fatalf("len %d: maxChunks = %d, maximum = %d", len(data), got, want)
+			}
+		}
+	})
+
+	t.Run("finds the maximum at every position", func(t *testing.T) {
+		// Covers chunk boundaries and the all-negative case for short slices:
+		// a 0 left in an empty chunk must not beat the real maximum.
+		for _, n := range []int{1, 7, 8, 9, 16, 17, 100} {
+			for pos := range n {
+				data := make([]int, n)
+				for i := range data {
+					data[i] = -1000
+				}
+				data[pos] = -1
+				if got := maxChunks(data); got != -1 {
+					t.Fatalf("len %d, max at index %d: maxChunks = %d, want -1", n, pos, got)
+				}
 			}
 		}
 	})

@@ -40,6 +40,9 @@ func maximum(data []int) int {
 
 // maxChunks returns the maximum number of elements in a chunks.
 func maxChunks(data []int) int {
+	if len(data) < CHUNKS {
+		return maximum(data)
+	}
 	var chunkMx = make([]int, CHUNKS)
 	chunkLen := len(data) / CHUNKS
 	group := sync.WaitGroup{}
