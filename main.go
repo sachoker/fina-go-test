@@ -18,8 +18,8 @@ func generateRandomElements(size int) []int {
 		panic("can't be less than zero")
 	}
 	res := make([]int, size)
-	for range size {
-		res = append(res, rand.Int())
+	for i := range size {
+		res[i] = rand.Int()
 	}
 	return res
 }
@@ -44,11 +44,15 @@ func maxChunks(data []int) int {
 	chunkLen := len(data) / CHUNKS
 	group := sync.WaitGroup{}
 	for i := 1; i <= CHUNKS; i++ {
+		end := chunkLen * i
+		if i == CHUNKS {
+			end = len(data)
+		}
 		group.Add(1)
-		go func(chunk []int) {
+		go func(chunk []int, idx int) {
 			defer group.Done()
-			chunkMx[i-1] = maximum(chunk)
-		}(data[chunkLen*(i-1) : chunkLen*i])
+			chunkMx[idx] = maximum(chunk)
+		}(data[chunkLen*(i-1):end], i-1)
 	}
 	group.Wait()
 	return maximum(chunkMx)
