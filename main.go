@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
+	"sync"
+	"time"
 )
 
 const (
@@ -11,30 +14,61 @@ const (
 
 // generateRandomElements generates random elements.
 func generateRandomElements(size int) []int {
-	// ваш код здесь
+	if size <= 0 {
+		panic("can't be less than zero")
+	}
+	res := make([]int, size)
+	for range size {
+		res = append(res, rand.Int())
+	}
+	return res
 }
 
 // maximum returns the maximum number of elements.
 func maximum(data []int) int {
-	// ваш код здесь
+	if len(data) == 0 {
+		return 0
+	}
+	max := data[0]
+	for _, i := range data {
+		if i > max {
+			max = i
+		}
+	}
+	return max
 }
 
 // maxChunks returns the maximum number of elements in a chunks.
 func maxChunks(data []int) int {
-	// ваш код здесь
+	var chunkMx = make([]int, CHUNKS)
+	chunkLen := len(data) / CHUNKS
+	group := sync.WaitGroup{}
+	for i := 1; i <= CHUNKS; i++ {
+		group.Add(1)
+		go func(chunk []int) {
+			defer group.Done()
+			chunkMx[i-1] = maximum(chunk)
+		}(data[chunkLen*(i-1) : chunkLen*i])
+	}
+	group.Wait()
+	return maximum(chunkMx)
 }
 
 func main() {
-	fmt.Printf("Генерируем %d целых чисел", SIZE)
-	// ваш код здесь
+	fmt.Printf("Генерируем %d целых чисел\n", SIZE)
+	data := generateRandomElements(SIZE)
 
 	fmt.Println("Ищем максимальное значение в один поток")
-	// ваш код здесь
+	s := time.Now()
+	mx := maximum(data)
+	elapsed := time.Since(s).Milliseconds()
 
-	fmt.Printf("Максимальное значение элемента: %d\nВремя поиска: %d ms\n", max, elapsed)
+	fmt.Printf("Максимальное значение элемента: %d\nВремя поиска: %d ms\n", mx, elapsed)
 
-	fmt.Printf("Ищем максимальное значение в %d потоков", CHUNKS)
-	// ваш код здесь
+	fmt.Printf("Ищем максимальное значение в %d потоков\n", CHUNKS)
+	s = time.Now()
+	mx = maxChunks(data)
+	elapsed = time.Since(s).Milliseconds()
 
-	fmt.Printf("Максимальное значение элемента: %d\nВремя поиска: %d ms\n", max, elapsed)
+	fmt.Printf("Максимальное значение элемента: %d\nВремя поиска: %d ms\n", mx, elapsed)
 }
